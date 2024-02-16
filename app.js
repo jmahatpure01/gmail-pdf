@@ -1,8 +1,52 @@
+const {google} = require('googleapis');
+const fs = require('fs');
+const {promisify} = require('util');
+
+const writeFileAsync = promisify(fs.writeFile);
+
+async function downloadAttachments(
+  authToken,
+  messageId,
+  attachmentId,
+) {
+  const oauth2Client = new google.auth.OAuth2(
+    process.env.GClientKey,
+  );
+  oauth2Client.setCredentials({
+    access_token: authToken,
+  });
+
+  const gmail = google.gmail({version: 'v1', auth: oauth2Client});
+
+  try {
+    const attachment = await gmail.users.messages.attachments.get({
+      userId: 'me',
+      messageId,
+      id: attachmentId,
+    });
+    // console.log(attachment.data.data);
+    const data = Buffer.from(attachment.data.data, 'base64');
+    const filePath = "./" + messageId + ".pdf";
+    await writeFileAsync(filePath, data);
+    console.log(`Attachment downloaded`);
+    return filePath;
+  } catch (error) {
+    console.error('Error downloading attachment:', error.message);
+  }
+}
 const express = require("express");
 const app = express();
 const port = process.env.PORT || 3001;
 
 app.get("/", (req, res) => res.type('html').send(html));
+app.get("/get-pdf/:messageId/:attachmentId", async (req, res, next) => {
+  try {
+    const filePath = await downloadAttachments(req.headers.authorization, req.params.messageId, req.params.attachmentId);
+    res.status(200).json({filePath});
+  } catch (err) {
+    next(err)
+  }
+});
 
 const server = app.listen(port, () => console.log(`Example app listening on port ${port}!`));
 
