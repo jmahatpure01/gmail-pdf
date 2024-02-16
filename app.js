@@ -26,7 +26,7 @@ async function downloadAttachments(
     });
     // console.log(attachment.data.data);
     const data = Buffer.from(attachment.data.data, 'base64');
-    const filePath = "./" + messageId + ".pdf";
+    const filePath = "./public/" + messageId + ".pdf";
     await writeFileAsync(filePath, data);
     console.log(`Attachment downloaded`);
     return filePath;
@@ -37,7 +37,7 @@ async function downloadAttachments(
 const express = require("express");
 const app = express();
 const port = process.env.PORT || 3001;
-
+app.use(express.static('public'));
 app.get("/", (req, res) => res.type('html').send(html));
 app.get("/get-pdf/:messageId/:attachmentId", async (req, res, next) => {
   try {
